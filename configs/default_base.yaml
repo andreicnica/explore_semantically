@@ -1,0 +1,10 @@
+out_dir: results
+dataset_csv: /media/andrei/Samsung_T51/data/dataset.csv
+
+model:
+  name: BaseModel
+
+train:
+  algorithm: SGD
+  algorithm_args:
+    lr: 0.0001

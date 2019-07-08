@@ -1,4 +1,17 @@
 # Byte-compiled / optimized / DLL files
+.idea/
+.liftoff_cfg.yaml
+results/
+configs/*
+!configs/**/config*
+!configs/**/default*
+configs/default.yaml
+local/
+dataset/*
+!configs/**/default*
+!configs/coco2014.sh
+
+
 __pycache__/
 *.py[cod]
 *$py.class

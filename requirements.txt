@@ -1,0 +1,6 @@
+liftoff
+numpy
+opencv-python
+pytorch
+torchsummary
+tensorboardX
