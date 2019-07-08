@@ -1,1 +1,1 @@
-# explore_semantically
+# semantic-exploration
