@@ -9,7 +9,6 @@ configs/default.yaml
 local/
 dataset/*
 !configs/**/default*
-!configs/coco2014.sh
 
 
 __pycache__/
