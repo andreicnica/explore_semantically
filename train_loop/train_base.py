@@ -29,6 +29,7 @@ BASE_LOG_HEADER = OrderedDict({
     "gradientstd": ("μ", "∇std", "{:.2f}"),
     "gradientmax": ("μ", "∇max", "{:.2f}"),
     "loss": ("μσmM", "L", "{:.2f}"),
+    "loss_eval": ("μσmM", "LE", "{:.2f}"),
 })
 
 
@@ -127,6 +128,8 @@ class TrainBase:
 
     def get_gradient_info(self, model):
         grad = [p.grad.data.norm(2).item() for p in model.parameters() if p.grad is not None]
+        if len(grad) == 0:
+            return 0,0,0
         return np.mean(grad), np.std(grad), np.max(grad)
 
     def _train(self):

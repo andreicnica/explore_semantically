@@ -69,6 +69,7 @@ def run(cfg: Namespace) -> None:
     # -- Data loading
     dataset_root = cfg.dataset_root
     data_mean = cfg.data_mean
+    data_std = cfg.data_std
     no_classes = cfg.no_classes
     max_expand = cfg.max_expand
     in_sizes = cfg.in_sizes
@@ -76,19 +77,25 @@ def run(cfg: Namespace) -> None:
     batch_size = cfg.batch_size
     num_workers = cfg.num_workers
 
-    # transform = transforms.Compose([
-    #         transforms.Normalize(torch.tensor(cfg.norm_mean),
-    #                              torch.tensor(cfg.norm_std))
-    #     ])
-    #
-    dataset = COCODetection(root=dataset_root,
-                            transform=SSDAugmentation(in_sizes, data_mean,
-                                                      no_classes=no_classes, max_expand=max_expand))
+    train_dataset = COCODetection( root=dataset_root, image_set=cfg.train_image_set,
+                                   transform=SSDAugmentation(in_sizes, data_mean, data_std,
+                                                             no_classes=no_classes,
+                                                             max_expand=max_expand))
 
-    train_loader = data.DataLoader(dataset, batch_size,
-                                  num_workers=num_workers,
-                                  shuffle=True, collate_fn=detection_collate,
-                                  pin_memory=True)
+    train_loader = data.DataLoader(train_dataset, batch_size,
+                                   num_workers=num_workers,
+                                   shuffle=True, collate_fn=detection_collate,
+                                   pin_memory=True)
+
+    val_dataset = COCODetection(root=dataset_root, image_set=cfg.val_image_set,
+                                transform=SSDAugmentation(in_sizes, data_mean, data_std,
+                                                          no_classes=no_classes,
+                                                          max_expand=max_expand))
+
+    val_loader = data.DataLoader(val_dataset, batch_size,
+                                 num_workers=num_workers,
+                                 shuffle=False, collate_fn=detection_collate,
+                                 pin_memory=True)
 
     # ==============================================================================================
     # Load model, optimizer and loss
@@ -103,14 +110,15 @@ def run(cfg: Namespace) -> None:
     # Loaders and stuff
     saver = SaveData(cfg.out_dir, save_best=cfg.save_best, save_all=cfg.save_all)
     logger = MultiLogger(cfg.out_dir, cfg.tb, cfg.log_key)
-    train_loop = get_train(cfg.train, train_loader, None, model, optimizer, device, saver, logger)
+    train_loop = get_train(cfg.train, train_loader, val_loader, model, optimizer, device,
+                           saver, logger)
 
     # ==============================================================================================
     # Train loop
 
     for epoch in range(no_epochs):
         train_loop.train()
-        # test(test_loader, model, device)
+        train_loop.eval()
 
 
 def main():

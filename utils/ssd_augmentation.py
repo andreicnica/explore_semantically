@@ -50,7 +50,6 @@ def make_gaussian(size, fwhm = 3, center=None, x=None, y=None):
     """
 
     if x is None:
-        print("WHATTFFS")
         x = np.arange(0, size, 1, float)
         y = x[:, np.newaxis]
 
@@ -99,13 +98,15 @@ class ConvertFromInts(object):
         return image.astype(np.float32), boxes, labels
 
 
-class SubtractMeans(object):
-    def __init__(self, mean):
+class Normalize(object):
+    def __init__(self, mean, std):
         self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
 
     def __call__(self, image, boxes=None, labels=None):
-        image = image.astype(np.float32)
+        image = image.astype(np.float32) / 255.
         image -= self.mean
+        image /= self.std
         return image.astype(np.float32), boxes, labels
 
 
@@ -477,12 +478,15 @@ class PhotometricDistort(object):
 
 
 class SSDAugmentation(object):
-    def __init__(self, multi_scale: List[int]= (256,), mean: List[int]=(104, 117, 123),
+    def __init__(self, multi_scale: List[int]= (256,),
+                 mean: List[int]=[0.485, 0.456, 0.406],
+                 std: List[int]=[0.229, 0.224, 0.225],
                  no_classes: int = 80, max_expand: int = 2.,
                  scale_segmentation: bool = False):
 
         self.scale_segmentation = scale_segmentation
         self.mean = mean
+        self.std = std
         self.sizes = multi_scale
         self.max_expand = max_expand
 
@@ -494,7 +498,7 @@ class SSDAugmentation(object):
             RandomSampleCrop(),
             RandomMirror(),
             ToPercentCoords(),
-            SubtractMeans(self.mean),
+            Normalize(self.mean, self.std),
             # Resize(multi_scale[0])
         ])
         self.resize = [Resize(size) for size in multi_scale]

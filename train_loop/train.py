@@ -26,18 +26,19 @@ class TrainDefault(TrainBase):
             batch_idx = self.batch_idx
 
             # Move to device
-            imgs = [x.to(device, non_blocking=True) for x in imgs]
-            segmentation = [x.to(device, non_blocking=True) for x in segmentation]
-            target = segmentation[0]
-
-            optimizer.zero_grad()
-
-            predict = model(imgs)
-
-            loss = loss_f(predict, target)
-
-            loss.backward()
-            optimizer.step()
+            # imgs = [x.to(device, non_blocking=True) for x in imgs]
+            # segmentation = [x.to(device, non_blocking=True) for x in segmentation]
+            # target = segmentation[0]
+            #
+            # optimizer.zero_grad()
+            #
+            # predict = model(imgs)
+            #
+            # loss = loss_f(predict, target)
+            #
+            # loss.backward()
+            # optimizer.step()
+            loss = torch.tensor(0)
 
             # -- Update log
             # TODO caution, might be slow to do update each step
@@ -45,17 +46,50 @@ class TrainDefault(TrainBase):
             log["loss"].append(loss.item())
 
             if (batch_idx + 1) % log_freq == 0:
-
                 logger.write(log)
 
                 log = self.get_base_log(reset=True)
-
+                break
         mean_loss = 0
         info = {}
         return mean_loss, info
 
     def _eval(self):
-        pass
+        model = self.model
+        device = self.device
+        test_loader = self.test_loader
+        log_freq = self.batch_log_freq
+        epoch = self.epoch
+        logger = self.logger
+        log = self.get_base_log()
+        loss_f = torch.nn.BCEWithLogitsLoss()
+        log["epoch"].append(self.epoch)
+
+        for self.batch_idx, (imgs, boxes, segmentation) in enumerate(test_loader):
+            batch_idx = self.batch_idx
+
+            # # Move to device
+            # imgs = [x.to(device, non_blocking=True) for x in imgs]
+            # segmentation = [x.to(device, non_blocking=True) for x in segmentation]
+            # target = segmentation[0]
+            #
+            # predict = model(imgs)
+            #
+            # loss = loss_f(predict, target)
+            loss = torch.tensor(1)
+
+            # -- Update log
+            log["loss_eval"].append(loss.item())
+            log["batch_idx"].append(self.batch_idx)
+
+            if (batch_idx + 1) % log_freq == 0:
+                logger.write(log)
+
+        logger.write(log)
+
+        mean_loss = 0
+        info = {}
+        return mean_loss, info
 
     def _save(self):
         raise NotImplemented

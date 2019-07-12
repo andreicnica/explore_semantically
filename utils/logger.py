@@ -44,6 +44,10 @@ def get_csv_writer(model_dir: str):
 
 
 def synthesize(array):
+    if len(array) == 0:
+        d = collections.OrderedDict({"mean": 0, "std": 0, "min": 0, "max": 0, })
+        return d
+
     d = collections.OrderedDict()
     d["mean"] = np.mean(array)
     d["std"] = np.std(array)
@@ -55,7 +59,7 @@ def synthesize(array):
 SYNTHESIS = {
     "μ": lambda x: [np.mean(x)],
     "+": lambda x: [np.sum(x)],
-    ".": lambda x: [x[-1]],
+    ".": lambda x: [x[-1]] if len(x) > 0 else [np.nan],
     ":": lambda x: [x],
     "μσmM": lambda x: list(synthesize(x).values())
 }
@@ -124,6 +128,7 @@ class MultiLogger:
         data = [self.iter_no]
         for k, v in source_data.items():
             prep, do_print = header_prep[k]
+
             wv = prep(v)
             data += wv
             if do_print:
