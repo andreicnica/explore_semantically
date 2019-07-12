@@ -26,19 +26,18 @@ class TrainDefault(TrainBase):
             batch_idx = self.batch_idx
 
             # Move to device
-            # imgs = [x.to(device, non_blocking=True) for x in imgs]
-            # segmentation = [x.to(device, non_blocking=True) for x in segmentation]
-            # target = segmentation[0]
-            #
-            # optimizer.zero_grad()
-            #
-            # predict = model(imgs)
-            #
-            # loss = loss_f(predict, target)
-            #
-            # loss.backward()
-            # optimizer.step()
-            loss = torch.tensor(0)
+            imgs = [x.to(device, non_blocking=True) for x in imgs]
+            segmentation = [x.to(device, non_blocking=True) for x in segmentation]
+            target = segmentation[0]
+
+            optimizer.zero_grad()
+
+            predict = model(imgs)
+
+            loss = loss_f(predict, target)
+
+            loss.backward()
+            optimizer.step()
 
             # -- Update log
             # TODO caution, might be slow to do update each step
@@ -68,15 +67,14 @@ class TrainDefault(TrainBase):
         for self.batch_idx, (imgs, boxes, segmentation) in enumerate(test_loader):
             batch_idx = self.batch_idx
 
-            # # Move to device
-            # imgs = [x.to(device, non_blocking=True) for x in imgs]
-            # segmentation = [x.to(device, non_blocking=True) for x in segmentation]
-            # target = segmentation[0]
-            #
-            # predict = model(imgs)
-            #
-            # loss = loss_f(predict, target)
-            loss = torch.tensor(1)
+            # Move to device
+            imgs = [x.to(device, non_blocking=True) for x in imgs]
+            segmentation = [x.to(device, non_blocking=True) for x in segmentation]
+            target = segmentation[0]
+
+            predict = model(imgs)
+
+            loss = loss_f(predict, target)
 
             # -- Update log
             log["loss_eval"].append(loss.item())
