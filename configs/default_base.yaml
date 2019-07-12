@@ -1,10 +1,28 @@
 out_dir: results
-dataset_csv: /media/andrei/Samsung_T51/data/dataset.csv
+tb: no
+use_cuda: yes
+save_best: yes
+save_all: no
+
+no_epochs: 120
+
+dataset_root: /media/andrei/Samsung_T51/coco
+no_classes: 80
+data_mean: [104, 117, 123]
+in_sizes: [256, 128, 64, 32]
+max_expand: 2.
+
+batch_size: 2
+num_workers: 8
 
 model:
-  name: BaseModel
+  name: ResNetUNet
 
 train:
+  name: TrainDefault
+  batch_log_freq: 5
   algorithm: SGD
   algorithm_args:
     lr: 0.0001
+
+log_key: []
