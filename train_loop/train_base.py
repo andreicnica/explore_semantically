@@ -61,6 +61,8 @@ class TrainBase:
         self._log = None
 
     def train(self):
+        print(f"Train {self.epoch}")
+
         if self.epoch == 0:
             self.first_train()
 
@@ -99,9 +101,16 @@ class TrainBase:
         log["gradientmax"].append(g_max)
 
     def eval(self):
-        self.model.eval()
+        print(f"Eval")
 
-        return self._eval()
+        self.model.eval()
+        mean_loss, info = self._eval()
+
+        save_data = self.save()
+        self.saver.save_training_data(save_data, mean_loss)
+
+        return mean_loss, info
+
 
     def save(self):
         save_data = {
@@ -112,8 +121,6 @@ class TrainBase:
             'loss': self.loss,
             }
 
-        other = self._save()
-        save_data.update(other)
         return save_data
 
     def load(self, checkpoint):

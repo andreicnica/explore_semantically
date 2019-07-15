@@ -76,8 +76,6 @@ class SaveData:
 
     def save_training_data(self, data, loss, other=None, model_dir=None):
         model_dir = model_dir if model_dir is not None else self.out_dir
-
-        trainig_data = dict()
         trainig_data = data
 
         if other is not None:

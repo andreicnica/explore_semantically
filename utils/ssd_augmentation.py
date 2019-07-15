@@ -246,6 +246,8 @@ class GaussianSegmentationMap:
 
         # arx = ary = np.ones_like(width)
         diff = (width < height)
+        if height.any() == 0:
+            print("WTF")
 
         ary = (~diff) + ((width / height + 1.) / 2.) * diff
         arx = diff + ((height / width + 1.) / 2.) * (~diff)

@@ -32,9 +32,9 @@ fi
 # Download the image data.
 cd ./images
 echo "Downloading MSCOCO train images ..."
-curl -LO http://images.cocodataset.org/zips/train2014.zip
+#curl -LO http://images.cocodataset.org/zips/train2017.zip
 echo "Downloading MSCOCO val images ..."
-curl -LO http://images.cocodataset.org/zips/val2014.zip
+curl -LO http://images.cocodataset.org/zips/val2017.zip
 
 cd ../
 if [ ! -d annotations]

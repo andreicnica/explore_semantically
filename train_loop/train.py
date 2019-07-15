@@ -22,7 +22,11 @@ class TrainDefault(TrainBase):
         log = self.get_base_log()
         loss_f = torch.nn.BCEWithLogitsLoss()
 
-        for self.batch_idx, (imgs, boxes, segmentation) in enumerate(train_loader):
+        # for self.batch_idx, (imgs, boxes, segmentation) in enumerate(train_loader):
+        for self.batch_idx, data in enumerate(train_loader):
+            imgs = data[:-1]
+            segmentation = [data[-1]]
+
             batch_idx = self.batch_idx
 
             # Move to device
@@ -48,8 +52,9 @@ class TrainDefault(TrainBase):
                 logger.write(log)
 
                 log = self.get_base_log(reset=True)
-                break
-        mean_loss = 0
+
+        mean_loss = np.mean(log['loss'])
+
         info = {}
         return mean_loss, info
 
@@ -64,7 +69,11 @@ class TrainDefault(TrainBase):
         loss_f = torch.nn.BCEWithLogitsLoss()
         log["epoch"].append(self.epoch)
 
-        for self.batch_idx, (imgs, boxes, segmentation) in enumerate(test_loader):
+        # for self.batch_idx, (imgs, boxes, segmentation) in enumerate(test_loader):
+        for self.batch_idx, data in enumerate(test_loader):
+            imgs = data[:-1]
+            segmentation = [data[-1]]
+
             batch_idx = self.batch_idx
 
             # Move to device
@@ -85,7 +94,7 @@ class TrainDefault(TrainBase):
 
         logger.write(log)
 
-        mean_loss = 0
+        mean_loss = np.mean(log['loss_eval'])
         info = {}
         return mean_loss, info
 

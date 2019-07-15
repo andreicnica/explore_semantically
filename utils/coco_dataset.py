@@ -129,7 +129,7 @@ class COCODetection(data.Dataset):
                    target is the object returned by ``coco.loadAnns``.
         """
         im, gt, sg, h, w = self.pull_item(index)
-        return im, gt, sg
+        return im + sg
 
     def __len__(self):
         return len(self.ids)
@@ -224,7 +224,7 @@ def remake(img, mean, box=None):
 if __name__ == "__main__":
     from utils.ssd_augmentation import SSDAugmentation
 
-    dataset_root = "/media/andrei/Samsung_T51/coco"
+    dataset_root = "/raid/workspace/alexandrug/coco/coco"
     image_set = "val2017"
     data_mean = [104, 117, 123]
     dim = [256, 128]
@@ -232,13 +232,14 @@ if __name__ == "__main__":
     dataset = COCODetection(root=dataset_root, image_set=image_set,
                             transform=SSDAugmentation(dim, data_mean))
 
-    for i in [np.random.randint(100) for _ in range(100)]:
-        print("-" * 100)
+    for i in range(len(dataset)):
+        # print("-" * 100)
 
         im, gt, sg, h, w = dataset.pull_item(i)
-        print(im[0].dtype)
-        exit()
         sg_scale0 = sg[0]
+        print(i)
+
+        continue
 
         for bidx in range(gt.shape[0]):
             class_idx = int((gt[bidx])[-1])

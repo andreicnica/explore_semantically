@@ -84,7 +84,7 @@ def run(cfg: Namespace) -> None:
 
     train_loader = data.DataLoader(train_dataset, batch_size,
                                    num_workers=num_workers,
-                                   shuffle=True, collate_fn=detection_collate,
+                                   shuffle=True,# collate_fn=detection_collate,
                                    pin_memory=True)
 
     val_dataset = COCODetection(root=dataset_root, image_set=cfg.val_image_set,
@@ -94,7 +94,7 @@ def run(cfg: Namespace) -> None:
 
     val_loader = data.DataLoader(val_dataset, batch_size,
                                  num_workers=num_workers,
-                                 shuffle=False, collate_fn=detection_collate,
+                                 shuffle=False,# collate_fn=detection_collate,
                                  pin_memory=True)
 
     # ==============================================================================================

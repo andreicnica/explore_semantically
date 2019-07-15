@@ -4,3 +4,4 @@ opencv-python
 pytorch
 torchsummary
 tensorboardX
+termcolor
