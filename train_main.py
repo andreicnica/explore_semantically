@@ -14,6 +14,8 @@ from utils.logger import MultiLogger
 from utils.coco_dataset import COCODetection, detection_collate
 from utils.ssd_augmentation import SSDAugmentation
 from utils import config
+from utils.lr_scheduler import LR_Scheduler
+
 
 def train(epoch, train_loader, model, optimizer, device):
     model.train()
@@ -98,6 +100,11 @@ def run(cfg: Namespace) -> None:
                                  pin_memory=True)
 
     # ==============================================================================================
+    # Loaders and stuff
+    saver = SaveData(cfg.out_dir, save_best=cfg.save_best, save_all=cfg.save_all)
+    logger = MultiLogger(cfg.out_dir, cfg.tb, cfg.log_key)
+
+    # ==============================================================================================
     # Load model, optimizer and loss
 
     model = get_model(cfg.model, no_classes=no_classes).to(device)
@@ -106,12 +113,17 @@ def run(cfg: Namespace) -> None:
     optim_args = vars(cfg.train.algorithm_args)
     optimizer = _optimizer(model.parameters(), **optim_args)
 
+    lr_scheduler = cfg.train.lr_scheduler
+    scheduler = None
+    if lr_scheduler.use:
+        scheduler = LR_Scheduler(lr_scheduler.mode, lr_scheduler.lr, lr_scheduler.epochs,
+                                 len(train_loader), logger=logger, lr_step=lr_scheduler.lr_step)
+
     # ==============================================================================================
-    # Loaders and stuff
-    saver = SaveData(cfg.out_dir, save_best=cfg.save_best, save_all=cfg.save_all)
-    logger = MultiLogger(cfg.out_dir, cfg.tb, cfg.log_key)
+    # Training loop
+
     train_loop = get_train(cfg.train, train_loader, val_loader, model, optimizer, device,
-                           saver, logger)
+                           saver, logger, scheduler=scheduler)
 
     # ==============================================================================================
     # Train loop

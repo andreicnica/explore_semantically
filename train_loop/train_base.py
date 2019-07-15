@@ -33,10 +33,26 @@ BASE_LOG_HEADER = OrderedDict({
 })
 
 
+class BestStats:
+    def __init__(self):
+        self._best_score = np.inf
+        self._iter_no = -1
+
+    def __call__(self, score, iter_no):
+        if score < self._best_score:
+            self._best_score = score
+            self._iter_no = iter_no
+
+    @property
+    def best(self):
+        return self._best_score, self._iter_no
+
+
 class TrainBase:
     def __init__(self, cfg: Namespace, train_loader: DataLoader, test_loader: DataLoader,
                  model: Module, optimizer: Optimizer, device: str,
-                 saver: SaveData, logger: MultiLogger):
+                 saver: SaveData, logger: MultiLogger,
+                 scheduler=None):
 
         self.cfg = cfg
         self.out_dir = getattr(cfg, "out_dir")
@@ -49,6 +65,10 @@ class TrainBase:
         self.device = device
         self.saver = saver
         self.logger = logger
+        self.scheduler = scheduler
+
+        self.best_train_loss = BestStats()
+        self.best_eval_loss = BestStats()
 
         self.epoch = 0
         self.batch_idx = 0
@@ -72,6 +92,9 @@ class TrainBase:
         self.model.train()
 
         self.loss, info = self._train()
+        self.best_train_loss(self.loss, self.epoch)
+        self.logger.info(f"Best train loss: {self.best_train_loss.best[0]} @ epoch "
+                         f"{self.best_train_loss.best[1]}")
 
         return self.loss, info
 
@@ -103,14 +126,20 @@ class TrainBase:
     def eval(self):
         print(f"Eval")
 
+        if len(self.base_log) <= 0:
+            self.first_train()
+
         self.model.eval()
         mean_loss, info = self._eval()
+        self.best_eval_loss(mean_loss, self.epoch)
 
         save_data = self.save()
         self.saver.save_training_data(save_data, mean_loss)
 
-        return mean_loss, info
+        self.logger.info(f"Best EVAL loss: {self.best_eval_loss.best[0]} @ epoch "
+                         f"{self.best_eval_loss.best[1]}")
 
+        return mean_loss, info
 
     def save(self):
         save_data = {

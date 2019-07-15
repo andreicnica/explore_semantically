@@ -123,12 +123,13 @@ class ResNetUNet(nn.Module):
 
 if __name__ == "__main__":
     net = ResNetUNet(80)
+    device = "cuda:0"
+    net = net.to(device)
 
-    x0 = torch.rand(1, 3, 256, 256)
-    x1 = torch.rand(1, 3, 128, 128)
-    x2 = torch.rand(1, 3, 64, 64)
-    x3 = torch.rand(1, 3, 32, 32)
+    for i in range(300):
+        x0 = torch.rand(1, 3, 256, 256).to(device)
+        x1 = torch.rand(1, 3, 128, 128).to(device)
+        x2 = torch.rand(1, 3, 64, 64).to(device)
+        x3 = torch.rand(1, 3, 32, 32).to(device)
 
-    out = net((x0, x1, x2, x3))
-
-    print(out.size())
+        out = net((x0, x1, x2, x3))

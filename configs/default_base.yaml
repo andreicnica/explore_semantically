@@ -4,10 +4,10 @@ use_cuda: yes
 save_best: yes
 save_all: no
 
-no_epochs: 120
+no_epochs: &epochs 240
 
 dataset_root: /raid/workspace/alexandrug/coco/coco
-train_image_set: train2017 # train2017
+train_image_set: train2017
 val_image_set: val2017
 
 no_classes: 80
@@ -25,8 +25,17 @@ model:
 train:
   name: TrainDefault
   batch_log_freq: 10
-  algorithm: RMSprop
+  algorithm: SGD
   algorithm_args:
-    lr: 0.0003
+    lr: &lr 0.003
+    momentum: 0.9
+    weight_decay: 5.e-4
+
+  lr_scheduler:
+    use: yes
+    mode: "step"
+    lr: *lr
+    epochs: *epochs
+    lr_step: 40
 
 log_key: []
