@@ -128,8 +128,8 @@ class COCODetection(data.Dataset):
             tuple: Tuple (image, target).
                    target is the object returned by ``coco.loadAnns``.
         """
-        im, gt, sg, h, w = self.pull_item(index)
-        return im + sg
+        im, gt, sg, h, w, img_id = self.pull_item(index)
+        return im + sg, img_id
 
     def __len__(self):
         return len(self.ids)
@@ -165,7 +165,7 @@ class COCODetection(data.Dataset):
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
 
         return [torch.from_numpy(img).permute(2, 0, 1) for img in imgs], target, segmentations, \
-               height, width
+               height, width, img_id
 
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form
@@ -225,37 +225,33 @@ if __name__ == "__main__":
     from utils.ssd_augmentation import SSDAugmentation
 
     dataset_root = "/raid/workspace/alexandrug/coco/coco"
-    image_set = "val2017"
+    image_set = "train2017"
     data_mean = [104, 117, 123]
     dim = [256, 128]
 
     dataset = COCODetection(root=dataset_root, image_set=image_set,
                             transform=SSDAugmentation(dim, data_mean))
+    train_loader = data.DataLoader(dataset, 32,
+                                   num_workers=40,
+                                   shuffle=False,  # collate_fn=detection_collate,
+                                   pin_memory=True)
+    for batch_idx, data in enumerate(train_loader):
+        #sg_scale0 = sg[0]
+        #for bidx in range(gt.shape[0]):
+        #    class_idx = int((gt[bidx])[-1])
 
-    for i in range(len(dataset)):
-        # print("-" * 100)
+            #print(COCO_CLASSES_2017[class_idx], gt[bidx])
 
-        im, gt, sg, h, w = dataset.pull_item(i)
-        sg_scale0 = sg[0]
-        print(i)
-
-        continue
-
-        for bidx in range(gt.shape[0]):
-            class_idx = int((gt[bidx])[-1])
-
-            print(COCO_CLASSES_2017[class_idx], gt[bidx])
-
-            img = remake(im[0], data_mean, box=((gt[bidx][:4]) * dim[0]).astype(np.int))
-            cv2.imshow("IMG", img)
+        #   img = remake(im[0], data_mean, box=((gt[bidx][:4]) * dim[0]).astype(np.int))
+            #cv2.imshow("IMG", img)
             # img_small = cv2.resize(img, (16, 16))
             # cv2.imshow("IMG_small", img_small)
             # img_small = cv2.resize(img_small, (256, 256))
             # cv2.imshow("IMG_resized", img_small)
-            cv2.imshow("Class Segm", sg_scale0[class_idx])
-            cv2.waitKey(0)
-            break
-
+            #cv2.imshow("Class Segm", sg_scale0[class_idx])
+            #cv2.waitKey(0)
+        print("-" * 100)
+        print("Batch: " + str(batch_idx))
     # #
     # segmentation = torch.zeros(80, *im[0].size()[1:])
     #

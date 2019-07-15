@@ -241,13 +241,11 @@ class GaussianSegmentationMap:
         #  x1,y1,x2,y2
         xl, yt, xr, yb = np.split((boxes * size), 4, axis=1)
 
-        height = yb - yt
-        width = xr - xl
+        height = yb - yt + 1.
+        width = xr - xl + 1.
 
         # arx = ary = np.ones_like(width)
         diff = (width < height)
-        if height.any() == 0:
-            print("WTF")
 
         ary = (~diff) + ((width / height + 1.) / 2.) * diff
         arx = diff + ((height / width + 1.) / 2.) * (~diff)
@@ -331,7 +329,7 @@ class RandomSampleCrop(object):
                 h = random.uniform(0.3 * height, height)
 
                 # aspect ratio constraint b/t .5 & 2
-                if h / w < 0.5 or h / w > 2:
+                if h == 0 or w == 0 or h / w < 0.5 or h / w > 2:
                     continue
 
                 left = random.uniform(width - w)
