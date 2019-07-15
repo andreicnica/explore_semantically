@@ -128,8 +128,8 @@ class COCODetection(data.Dataset):
             tuple: Tuple (image, target).
                    target is the object returned by ``coco.loadAnns``.
         """
-        im, gt, sg, h, w, img_id = self.pull_item(index)
-        return im + sg, img_id
+        im, gt, sg, h, w = self.pull_item(index)
+        return im + sg
 
     def __len__(self):
         return len(self.ids)
@@ -165,7 +165,7 @@ class COCODetection(data.Dataset):
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
 
         return [torch.from_numpy(img).permute(2, 0, 1) for img in imgs], target, segmentations, \
-               height, width, img_id
+               height, width
 
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form

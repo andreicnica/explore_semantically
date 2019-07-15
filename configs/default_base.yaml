@@ -1,6 +1,7 @@
 out_dir: results
 tb: no
 use_cuda: yes
+no_gpus: 3
 save_best: yes
 save_all: no
 

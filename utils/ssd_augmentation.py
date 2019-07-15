@@ -494,9 +494,9 @@ class SSDAugmentation(object):
             ConvertFromInts(),
             ToAbsoluteCoords(),
             PhotometricDistort(),
-            # Expand(self.mean, max_expand=max_expand),
-            # RandomSampleCrop(),
-            # RandomMirror(),
+            Expand(self.mean, max_expand=max_expand),
+            RandomSampleCrop(),
+            RandomMirror(),
             ToPercentCoords(),
             Normalize(self.mean, self.std),
             # Resize(multi_scale[0])

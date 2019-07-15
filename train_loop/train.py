@@ -83,7 +83,6 @@ class TrainDefault(TrainBase):
 
         with torch.no_grad():
             for self.batch_idx, data in enumerate(test_loader):
-                # Move to device
                 for x in data:
                     x.detach_()
 
@@ -94,9 +93,6 @@ class TrainDefault(TrainBase):
 
                 imgs = [x.to(device) for x in imgs]
                 segmentation = [x.to(device) for x in segmentation]
-
-                for x in imgs + segmentation:
-                    x.add_(0.3)
 
                 target = segmentation[0]
 
