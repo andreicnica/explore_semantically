@@ -110,6 +110,17 @@ class Normalize(object):
         return image.astype(np.float32), boxes, labels
 
 
+class NormalizeTensor(object):
+    def __init__(self, mean, std, device="cpu"):
+        self.mean = (torch.FloatTensor(mean).to(device) * 255.).view(1, 3, 1, 1)
+        self.std = (torch.FloatTensor(std).to(device) * 255.).view(1, 3, 1, 1)
+
+    def __call__(self, image):
+        image.sub_(self.mean)
+        image.div_(self.std)
+        return image
+
+
 class ToAbsoluteCoords(object):
     def __call__(self, image, boxes=None, labels=None):
         height, width, channels = image.shape
@@ -268,6 +279,8 @@ class GaussianSegmentationMap:
             s *= 1. / s.max()
             segmentation[labels[idx]] = np.max([segmentation[labels[idx]], s], axis=0)
 
+        segmentation *= 255
+        segmentation = segmentation.astype(np.uint8)
         return segmentation
 
 
@@ -473,7 +486,7 @@ class PhotometricDistort(object):
             distort = Compose(self.pd[1:])
         im, boxes, labels = distort(im, boxes, labels)
         im, boxes, labels = self.rand_light_noise(im, boxes, labels)
-        # im = np.clip(im, 0, 255)
+        im = np.clip(im, 0, 255).astype(np.uint8)
         return im, boxes, labels
 
 
@@ -482,7 +495,8 @@ class SSDAugmentation(object):
                  mean: List[int]=[0.485, 0.456, 0.406],
                  std: List[int]=[0.229, 0.224, 0.225],
                  no_classes: int = 80, max_expand: int = 2.,
-                 scale_segmentation: bool = False):
+                 scale_segmentation: bool = False,
+                 validation: bool = False):
 
         self.scale_segmentation = scale_segmentation
         self.mean = mean
@@ -490,17 +504,28 @@ class SSDAugmentation(object):
         self.sizes = multi_scale
         self.max_expand = max_expand
 
-        self.augment_base = Compose([
-            ConvertFromInts(),
-            ToAbsoluteCoords(),
-            PhotometricDistort(),
-            Expand(self.mean, max_expand=max_expand),
-            RandomSampleCrop(),
-            RandomMirror(),
-            ToPercentCoords(),
-            Normalize(self.mean, self.std),
-            # Resize(multi_scale[0])
-        ])
+        if validation:
+            self.augment_base = Compose([
+                ConvertFromInts(),
+                ToAbsoluteCoords(),
+                RandomSampleCrop(),
+                RandomMirror(),
+                ToPercentCoords(),
+                # Normalize(self.mean, self.std),
+                # Resize(multi_scale[0])
+            ])
+        else:
+            self.augment_base = Compose([
+                ConvertFromInts(),
+                ToAbsoluteCoords(),
+                PhotometricDistort(),
+                Expand(self.mean, max_expand=max_expand),
+                RandomSampleCrop(),
+                RandomMirror(),
+                ToPercentCoords(),
+                # Normalize(self.mean, self.std),
+                # Resize(multi_scale[0])
+            ])
         self.resize = [Resize(size) for size in multi_scale]
 
         self.segmenter = GaussianSegmentationMap(multi_scale[0], no_classes)
