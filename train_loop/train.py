@@ -4,6 +4,7 @@ import torch
 import torchvision
 import cv2
 import numpy as np
+from utils.ssd_augmentation import NormalizeTensor
 
 
 class TrainDefault(TrainBase):
@@ -12,6 +13,7 @@ class TrainDefault(TrainBase):
         super().__init__(cfg, train_loader, test_loader, model, optimizer, device, saver, logger,
                          scheduler=scheduler)
         self.view_freq = 0
+        self.norm_img = NormalizeTensor(cfg.data_mean, cfg.data_std, device=device)
 
     def _train(self):
         model = self.model
@@ -24,7 +26,9 @@ class TrainDefault(TrainBase):
         log = self.get_base_log()
         all_loss = []
 
-        loss_f = torch.nn.BCEWithLogitsLoss()
+        # loss_f = torch.nn.BCEWithLogitsLoss()
+        loss_f = torch.nn.KLDivLoss(reduction="sum")
+        softmax = torch.nn.Softmax(dim=2)
 
         # for self.batch_idx, (imgs, boxes, segmentation) in enumerate(train_loader):
         for self.batch_idx, data in enumerate(train_loader):
@@ -41,13 +45,27 @@ class TrainDefault(TrainBase):
             batch_idx = self.batch_idx
 
             # Move to device
-            imgs = [x.to(device, non_blocking=True) for x in imgs]
-            segmentation = [x.to(device, non_blocking=True) for x in segmentation]
+            imgs = [x.to(device, non_blocking=True).float() for x in imgs]
+            imgs = [self.norm_img(x) for x in imgs]
+            segmentation = [x.to(device, non_blocking=True).float() for x in segmentation]
+            segmentation = [x.div_(255.) for x in segmentation]
+
             target = segmentation[0]
 
             optimizer.zero_grad()
 
             predict = model(imgs)
+
+            # --
+            b, c, w, h = target.size()
+            # target.div_(target.sum(dim=[2, 3]).unsqueeze(2).unsqueeze(3) + 3e-8)
+            target = softmax(target.view(b, c, -1))
+            # target = target.view(b, c, -1)
+            target = target.detach()
+
+            predict = predict.view(b, c, -1)
+            predict = torch.log_softmax(predict, dim=2)
+            # --
 
             loss = loss_f(predict, target)
 
@@ -78,8 +96,15 @@ class TrainDefault(TrainBase):
         epoch = self.epoch
         logger = self.logger
         log = self.get_base_log()
-        loss_f = torch.nn.BCEWithLogitsLoss()
         log["epoch"].append(self.epoch)
+
+        # loss_f = torch.nn.BCEWithLogitsLoss()
+        loss_f = torch.nn.KLDivLoss(reduction="sum")
+        softmax = torch.nn.Softmax(dim=2)
+
+        imgs = None
+        segmentation = None
+        predict = None
 
         with torch.no_grad():
             for self.batch_idx, data in enumerate(test_loader):
@@ -91,12 +116,25 @@ class TrainDefault(TrainBase):
 
                 batch_idx = self.batch_idx
 
-                imgs = [x.to(device) for x in imgs]
-                segmentation = [x.to(device) for x in segmentation]
+                imgs = [x.to(device, non_blocking=True).float() for x in imgs]
+                imgs = [self.norm_img(x) for x in imgs]
+                segmentation = [x.to(device, non_blocking=True).float() for x in segmentation]
+                segmentation = [x.div_(255.) for x in segmentation]
 
                 target = segmentation[0]
 
                 predict = model(imgs)
+
+                # --
+                b, c, w, h = target.size()
+                # target.div_(target.sum(dim=[2, 3]).unsqueeze(2).unsqueeze(3) + 3e-8)
+                target = softmax(target.view(b, c, -1))
+                # target = target.view(b, c, -1)
+                target = target.detach()
+
+                predict = predict.view(b, c, -1)
+                predict = torch.log_softmax(predict, dim=2)
+                # --
 
                 loss = loss_f(predict, target)
 
@@ -108,6 +146,15 @@ class TrainDefault(TrainBase):
                     logger.write(log)
 
         logger.write(log)
+
+        # ==============================================================================================================
+        data = dict({
+            "imgs": [x.cpu() for x in imgs],
+            "segmentation": [x.cpu() for x in segmentation],
+            "predict": predict.cpu()
+        })
+        torch.save(data, f"{self.saver.out_dir}/data_eval_{self.epoch}")
+        # ==============================================================================================================
 
         mean_loss = np.mean(log['loss_eval'])
         info = {}
