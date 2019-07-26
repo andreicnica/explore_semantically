@@ -56,6 +56,8 @@ def test(test_loader, model, device):
 
 
 def run(cfg: Namespace) -> None:
+    # torch.multiprocessing.set_start_method("spawn")
+
     use_cuda = cfg.use_cuda
     no_epochs = cfg.no_epochs
     out_dir = cfg.out_dir
@@ -80,23 +82,21 @@ def run(cfg: Namespace) -> None:
     num_workers = cfg.num_workers
 
     train_dataset = COCODetection( root=dataset_root, image_set=cfg.train_image_set,
-                                   transform=SSDAugmentation(in_sizes, data_mean, data_std,
-                                                             no_classes=no_classes,
+                                   transform=SSDAugmentation(in_sizes, data_mean, data_std, no_classes=no_classes,
                                                              max_expand=max_expand))
 
     train_loader = data.DataLoader(train_dataset, batch_size,
                                    num_workers=num_workers,
-                                   shuffle=True,# collate_fn=detection_collate,
+                                   shuffle=True,  # collate_fn=detection_collate,
                                    pin_memory=True)
 
     val_dataset = COCODetection(root=dataset_root, image_set=cfg.val_image_set,
-                                transform=SSDAugmentation(in_sizes, data_mean, data_std,
-                                                          no_classes=no_classes,
-                                                          max_expand=max_expand))
+                                transform=SSDAugmentation(in_sizes, data_mean, data_std, no_classes=no_classes,
+                                                          max_expand=max_expand, validation=True))
 
     val_loader = data.DataLoader(val_dataset, batch_size,
                                  num_workers=num_workers,
-                                 shuffle=False,# collate_fn=detection_collate,
+                                 shuffle=True,  # collate_fn=detection_collate,
                                  pin_memory=True)
 
     # ==============================================================================================
@@ -107,7 +107,13 @@ def run(cfg: Namespace) -> None:
     # ==============================================================================================
     # Load model, optimizer and loss
 
-    model = get_model(cfg.model, no_classes=no_classes).to(device)
+    model = get_model(cfg.model, no_classes=no_classes)
+
+    if torch.cuda.device_count() > 1 and len(cfg.gpus) > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = torch.nn.DataParallel(model, device_ids=cfg.gpus)
+
+    model = model.to(device)
 
     _optimizer = getattr(torch.optim, cfg.train.algorithm)
     optim_args = vars(cfg.train.algorithm_args)
@@ -115,9 +121,12 @@ def run(cfg: Namespace) -> None:
 
     lr_scheduler = cfg.train.lr_scheduler
     scheduler = None
+
     if lr_scheduler.use:
         scheduler = LR_Scheduler(lr_scheduler.mode, lr_scheduler.lr, lr_scheduler.epochs,
-                                 len(train_loader), logger=logger, lr_step=lr_scheduler.lr_step)
+                                 iters_per_epoch=len(train_loader),
+                                 lr_step=getattr(lr_scheduler, "lr_step", 0),
+                                 warmup_epochs=getattr(lr_scheduler, "warmup_epochs", 0), logger=logger,)
 
     # ==============================================================================================
     # Training loop
