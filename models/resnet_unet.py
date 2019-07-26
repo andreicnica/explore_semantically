@@ -46,13 +46,18 @@ class ResNetUNet(nn.Module):
         self.conv_up3 = conv_relu(256 + 512, 512, 3, 1)
         self.conv_up2 = conv_relu(128 + 512, 256, 3, 1)
         self.conv_up1 = conv_relu(64 + 256, 256, 3, 1)
-        self.conv_up0 = conv_relu(64 + 256, 128, 3, 1)
+        self.conv_up0 = conv_relu(64 + 256, 256, 3, 1)
+
+        self.conv_up3_reg = nn.Dropout2d(0.3, inplace=True)  # nn.BatchNorm2d(256 + 512)
+        self.conv_up2_reg = nn.Dropout2d(0.3, inplace=True)  # nn.BatchNorm2d(128 + 512)
+        self.conv_up1_reg = nn.Dropout2d(0.3, inplace=True)  # nn.BatchNorm2d(64 + 256)
+        self.conv_up0_reg = nn.Dropout2d(0.3, inplace=True)  # nn.BatchNorm2d(64 + 256)
 
         self.conv_original_size0 = conv_relu(3, 64, 3, 1)
         self.conv_original_size1 = conv_relu(64, 64, 3, 1)
-        self.conv_original_size2 = conv_relu(64 + 128, 64, 3, 1)
+        self.conv_original_size2 = conv_relu(64 + 256, 256, 3, 1)
 
-        self.conv_last = nn.Conv2d(64, no_classes, 1)
+        self.conv_last = nn.Conv2d(256, no_classes, 1)
 
     def forward(self, input):
         input0, input1, input2, input3 = input
@@ -93,21 +98,25 @@ class ResNetUNet(nn.Module):
         x = self.upsample(layer4)
         layer3 = self.layer3_1x1(layer3)
         x = torch.cat([x, layer3], dim=1)
+        x = self.conv_up3_reg(x)
         x = self.conv_up3(x)
 
         x = self.upsample(x)
         layer2 = self.layer2_1x1(layer2)
         x = torch.cat([x, layer2], dim=1)
+        x = self.conv_up2_reg(x)
         x = self.conv_up2(x)
 
         x = self.upsample(x)
         layer1 = self.layer1_1x1(layer1)
         x = torch.cat([x, layer1], dim=1)
+        x = self.conv_up1_reg(x)
         x = self.conv_up1(x)
 
         x = self.upsample(x)
         layer0 = self.layer0_1x1(layer0)
         x = torch.cat([x, layer0], dim=1)
+        x = self.conv_up0_reg(x)
         x = self.conv_up0(x)
 
         x = self.upsample(x)
