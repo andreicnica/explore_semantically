@@ -17,16 +17,15 @@ COCO_API = 'PythonAPI'
 INSTANCES_SET = 'instances_{}.json'
 COCO_CLASSES_2017 = \
     ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
-     'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench',
-     'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra',
-     'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-     'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-     'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork',
-     'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli',
-     'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant',
-     'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
-     'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
-     'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
+     'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
+     'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
+     'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard',
+     'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle',
+     'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+     'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+     'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+     'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
+     'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
 
 
 def get_label_map(label_file):
@@ -209,33 +208,44 @@ class COCODetection(data.Dataset):
         return fmt_str
 
 
-def remake(img, mean, box=None):
-    img = img.numpy().copy()
-    img = img.transpose((1, 2, 0))
-    img = img[:, :, (2, 1, 0)]
-    img += np.array(mean)
-    img = np.clip(img, 0, 255)
-    img = img.astype(np.uint8).copy()
-    if box is not None:
-        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (0,0,255))
-    return img
-
-
 if __name__ == "__main__":
     from utils.ssd_augmentation import SSDAugmentation
 
     dataset_root = "/raid/workspace/alexandrug/coco/coco"
-    image_set = "train2017"
+    image_set = "val2017"
     data_mean = [104, 117, 123]
     dim = [256, 128]
 
     dataset = COCODetection(root=dataset_root, image_set=image_set,
                             transform=SSDAugmentation(dim, data_mean))
-    train_loader = data.DataLoader(dataset, 32,
+    train_loader = data.DataLoader(dataset, 1,
                                    num_workers=40,
                                    shuffle=False,  # collate_fn=detection_collate,
                                    pin_memory=True)
     for batch_idx, data in enumerate(train_loader):
+        seg = data[-1][0,0].numpy().copy()
+
+        print(data[-1])
+        torch.save({"target": data[-1]}, "test")
+        target = data[-1].float()
+
+        target.div_(255)
+
+        b, c, _, _ = target.size()
+        target.div_(target.sum(dim=[2, 3]).unsqueeze(2).unsqueeze(3))
+        target = target.view(b, c, -1)
+        target = target.detach()
+
+        print(target)
+        # seg_soft = (segt.view(b, c, -1).float() / ).view(b,c, w, h)
+        # t = x / x.sum(dim=[2, 3]).unsqueeze(2).unsqueeze(3)
+        # cv2.imshow("seg", seg)
+        #
+        # seg_softv = seg_soft[0, 0].numpy()
+        # print(seg_softv.max())
+        # print(seg_softv)
+        # cv2.imshow("seg_softv", seg_softv)
+        # cv2.waitKey(0)
         #sg_scale0 = sg[0]
         #for bidx in range(gt.shape[0]):
         #    class_idx = int((gt[bidx])[-1])
