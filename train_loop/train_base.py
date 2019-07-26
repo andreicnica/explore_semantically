@@ -24,7 +24,7 @@ synthesis_type:
 BASE_LOG_HEADER = OrderedDict({
     "epoch": (".", "E", "{}"),
     "batch_idx": (".", "B", "{:06}"),
-    "bps": (".", "BPS", "{:04.0f}"),
+    "bps": (".", "BPS", "{:04.4f}"),
     "gradientμ": ("μ", "∇μ", "{:.2f}"),
     "gradientstd": ("μ", "∇std", "{:.2f}"),
     "gradientmax": ("μ", "∇max", "{:.2f}"),
@@ -86,7 +86,6 @@ class TrainBase:
         if self.epoch == 0:
             self.first_train()
 
-        self.epoch += 1
         self.batch_idx = 0
 
         self.model.train()
@@ -95,6 +94,8 @@ class TrainBase:
         self.best_train_loss(self.loss, self.epoch)
         self.logger.info(f"Best train loss: {self.best_train_loss.best[0]} @ epoch "
                          f"{self.best_train_loss.best[1]}")
+
+        self.epoch += 1
 
         return self.loss, info
 

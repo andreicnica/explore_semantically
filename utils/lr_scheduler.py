@@ -45,24 +45,34 @@ class LR_Scheduler(object):
         self.logger.info('Using {} LR Scheduler!'.format(self.mode))
 
     def __call__(self, optimizer, i, epoch, best_pred):
+        i = i + 1
         T = epoch * self.iters_per_epoch + i
+        adjust = True
+
+        lr = self.lr
         if self.mode == 'cos':
             lr = 0.5 * self.lr * (1 + math.cos(1.0 * T / self.N * math.pi))
         elif self.mode == 'poly':
             lr = self.lr * pow((1 - 1.0 * T / self.N), 0.9)
         elif self.mode == 'step':
             lr = self.lr * (0.1 ** (epoch // self.lr_step))
+        elif self.mode == 'none':
+            adjust = False
         else:
             raise NotImplemented
         # warm up lr schedule
         if self.warmup_iters > 0 and T < self.warmup_iters:
             lr = lr * 1.0 * T / self.warmup_iters
+            adjust = True
+
         if epoch > self.epoch:
             self.logger.info('\n=>Epoches %i, learning rate = %.4f, \
                 previous best = %.4f' % (epoch, lr, best_pred))
             self.epoch = epoch
         assert lr >= 0
-        self._adjust_learning_rate(optimizer, lr)
+
+        if adjust:
+            self._adjust_learning_rate(optimizer, lr)
 
     def _adjust_learning_rate(self, optimizer, lr):
         if len(optimizer.param_groups) == 1:
